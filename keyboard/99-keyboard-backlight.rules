@@ -1,0 +1,22 @@
+# Certain "gamer" keyboards have a backlight that is toggled via a special hardware device tied to
+# the scrolllock key, and at least for me the physical key doesn't actually toggle the light on.
+# This udev rule turns on the light automatically for the offending type of keyboard. 
+#
+# While you can usually enable the backlight under X.org via `xset led 3`, this
+# won't work in Wayland. The other approach is to manually echo 1 to the device address, usually
+# something like (as root) `echo 1 > /sys/class/leds/input30::scrolllock/brightness`, but the
+# device address can (and usually does) change every time it's plugged in.
+#
+# The udev solution is to wait for the scrolllock device to initialize, then set the keyboard
+# backlight via the latter solution above. Because the inputXX is related to the device kernel,
+# we can substitute in directly. There is a 0.1 second sleep to avoid timing issues; without it,
+# the backlight would turn on then off right away. On my setup, 0.05 seconds was usually enough
+# time to avoid the issue, so I set it to 0.1 seconds.
+#
+# If this rule doesn't work for you, check your device vendor and product IDs in lsusb, and
+# substitute in those values below for ATTRS{idVendor} and ATTRS{idProduct}.
+#
+# This is related to the StackOverflow question here: 
+# https://unix.stackexchange.com/questions/243339/udev-rule-to-turn-on-keyboard-backlight
+
+ACTION=="add", KERNEL=="input[0-9]*::scrolllock", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="0001", RUN+="/bin/bash -c \"sleep 0.1; echo 1 > /sys/class/leds/'%k'/brightness;\""
